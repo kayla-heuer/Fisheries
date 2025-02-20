@@ -9,8 +9,6 @@ editor: visual
 **Loading the tidyverse package and seeing what files are in the folder.**
 
 ```{r}
-library(usethis)
-use_git()
 library(tidyverse)
 library(ggplot2)
 list.files("RAW_Data")
@@ -90,8 +88,6 @@ fdata %>% group_by(Season, Sex) %>% summarize(GSI = mean(as.numeric(GSI), na.rm 
 
 ```{r}
 library(broom)
-install.packages('writexl')
-library(writexl)
 GSIfem <- aov(GSI ~ Season, data = subset(fdata, Sex == "F"))
 tidy(GSIfem)
 ```
@@ -120,8 +116,10 @@ tidy(LeCrenmale)
 ```{r}
 fem <- fdata[which(fdata$Sex=='F'),]
 male <- fdata[which(fdata$Sex=='M'),]
-t.test(fem$TL, male$TL, conf.level = 0.95 )
-summary(fem$TL)
+t <- t.test(fem$TL, male$TL, conf.level = 0.95 )
+tidy(t)
+
+
 
 hist <- ggplot() +
  geom_histogram(aes(x = fem$TL, fill = "Female"), alpha = 0.75) +
@@ -130,5 +128,5 @@ hist <- ggplot() +
  labs(title = "Frequency Histogram of Total Length (mm) of female and male P. blochii", x = "Total Length (mm)", y = "Frequency") + theme_classic()
 png("Output/TLhistogram.png")
 print(hist)
-dev.off()
+
 ```
