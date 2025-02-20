@@ -1,0 +1,134 @@
+---
+title: "Fisheries"
+format: html
+editor: visual
+---
+
+## Tidydata Deliverable
+
+**Loading the tidyverse package and seeing what files are in the folder.**
+
+```{r}
+library(usethis)
+use_git()
+library(tidyverse)
+library(ggplot2)
+list.files("RAW_Data")
+```
+
+***Reading data into variable fdat which stands for "fisheries data"***
+
+The dataset is from a [3rd year project for BIO3017S]{.underline}.
+
+The project aimed to investigate the biology of the two seabream species from the **Western Cape**: *Pachymetopon blochii* and *Spondyliosoma emarginatum.* Data on catch date, sex (M/F), length (Total Length and Fork Length) (mm), mass(g), Gonad Weight (g), fat (0-3) and Gonad Stages (1-7) are available for both species, but for this deliverable, I focused only on the *P. blochii* dataset.
+
+GSI and Le Cren's condition index were calculated using the recorded data. The equations for these are further down.
+
+License of the data set? - Email Colin/Speak to him on camp
+
+What is the source?
+
+```{r}
+fdat <- read.csv("RAW_Data/P_blochii_Project1.csv")
+```
+
+***Printing a summary of the dataset***
+
+```{r}
+summary(fdat)
+```
+
+***Recoding Sex variable to remove J and H and replace them with NAs***
+
+```{r}
+fdat$Sex <- ifelse(fdat$Sex == "J", NA, fdat$Sex)
+fdat$Sex <- ifelse(fdat$Sex == "H", NA, fdat$Sex)
+```
+
+***Converting Season from integer to factor***
+
+```{r}
+fdat$Season <- as.factor(fdat$Season)
+```
+
+***Removing NAs from the dataset***
+
+```{r}
+fdata <- na.omit(fdat)
+```
+
+***Take the fisheries data, group it by the Season and Sex and calculate means for GSI, Fat and Le Cren***
+
+-   GSI (Gonad Somatic Index - indicates the relative size of the gonads) was calculated using the formula = GW/(Total Mass - GW)
+
+-   Le Cren (the condition of the fish) was calculated using the formula = Mass/Predicted Mass
+
+-   Fat was visually described and scored 0-3, o being no fat and 3 being alot of fat
+
+```{r}
+
+fdata %>% group_by(Season, Sex) %>% summarize(GSI = mean(as.numeric(GSI), na.rm = TRUE), 'Le Cren' = mean(Le.Cren), Fat = mean(Fat, na.rm = TRUE)) %>% arrange(Sex)
+```
+
+***Take the fisheries data, group only by Sex now and calculate the mean TL***
+
+-   TL represent the Total Length - this is measured from the start of the head of the fish to the tip of the tail
+
+    ```{r}
+    fdata %>% group_by(Sex) %>% summarize(TL = mean(TL))
+    ```
+
+***Now that we have tidied up the data we can run some analyses:***
+
+-   One-way ANOVA tests on GSI and Le Cren.
+
+    -   When selecting only females for the ANOVA we use subset(fdata, Sex == 'F')
+
+    -   When selecting only males for the ANOVA we use subset(fdata, Sex == 'M')
+
+[GSI ANOVA Tests]{.underline}
+
+```{r}
+library(broom)
+install.packages('writexl')
+library(writexl)
+GSIfem <- aov(GSI ~ Season, data = subset(fdata, Sex == "F"))
+tidy(GSIfem)
+```
+
+```{r}
+GSImale <- aov(GSI ~ Season, data = subset(fdata, Sex == "M"))
+tidy(GSImale)
+```
+
+[Le Cren ANOVA Tests]{.underline}
+
+```{r}
+LeCrenfem <- aov(Le.Cren ~ Season, data = subset(fdata, Sex == "F"))
+tidy(LeCrenfem)
+```
+
+```{r}
+LeCrenmale <- aov(Le.Cren ~ Season, data = subset(fdata, Sex == "M"))
+tidy(LeCrenmale)
+```
+
+-   A t-test test on TL between the sexes to test for Sequential Hermaphroditism
+    -   If the p-value is less than 0.05, then we do not reject the null hypothesis (no difference in mean TL between the sexes = no sequential hermaphroditism)
+    -   In order to do the t-test between the sexes I need to create two separate objects holding the data for female *P. blochii* and male *P. blochii*
+
+```{r}
+fem <- fdata[which(fdata$Sex=='F'),]
+male <- fdata[which(fdata$Sex=='M'),]
+t.test(fem$TL, male$TL, conf.level = 0.95 )
+summary(fem$TL)
+
+hist <- ggplot() +
+ geom_histogram(aes(x = fem$TL, fill = "Female"), alpha = 0.75) +
+ geom_histogram(aes(x = male$TL, fill = "Male"), alpha = 0.75) +
+ scale_fill_manual(name = 'Sex', values = c("Female" = "lightblue", "Male" = "orange")) +
+ labs(title = "Frequency Histogram of Total Length (mm) of female and male P. blochii", x = "Total Length (mm)", y = "Frequency") + theme_classic()
+png("Output/TLhistogram.png")
+print(hist)
+dev.off()
+```
