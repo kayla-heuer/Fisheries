@@ -32,11 +32,12 @@ fdat <- read.csv("RAW_Data/P_blochii_Project.csv")
 summary(fdat)
 ```
 
-***Recoding Sex variable to remove J and H and replace them with NAs***
+***Recoding Sex variable to remove blanks,Js and Hs and replace them with NAs***
 
 ```{r}
 fdat$Sex <- ifelse(fdat$Sex == "J", NA, fdat$Sex)
 fdat$Sex <- ifelse(fdat$Sex == "H", NA, fdat$Sex)
+fdat$Sex <- ifelse(fdat$Sex == "", NA, fdat$Sex)
 ```
 
 ***Converting Season from integer to factor***
